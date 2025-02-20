@@ -72,11 +72,11 @@ class AuthController extends Controller
         return response()->json(['message' => 'Déconnexion réussie'])->cookie(Cookie::forget('jwt_token'));
     }
 
-    public function me(Request $request)
-    {
-        $user = auth()->user();
-        return response()->json($user);
-    }
+    // public function me(Request $request)
+    // {
+    //     $user = auth()->user();
+    //     return response()->json($user);
+    // }
 
     public function sendemail(Request $request)
     {
