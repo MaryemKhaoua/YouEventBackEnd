@@ -14,6 +14,8 @@ class Event extends Model
         'title', 'description', 'date', 'location', 'max_participants', 'category_id', 'created_by'
     ];
 
+    protected $guarded = [];
+    
     public function category()
     {
         return $this->belongsTo(Category::class);

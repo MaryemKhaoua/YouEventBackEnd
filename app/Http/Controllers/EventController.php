@@ -5,92 +5,75 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Http\Requests\EventRequest;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 class EventController extends Controller
 {
-    /**
-     * 📌 Afficher tous les événements (accessible à tous, même sans connexion)
-     */
     public function index()
     {
         $events = Event::all();
         return response()->json($events);
     }
 
-    /**
-     * 📌 Créer un événement (Seulement organisateur et admin)
-     */
-    public function store(EventRequest $request)
+    public function store(EventRequest $request): JsonResponse
     {
-        dd($request->validated());
-
-        $user = Auth::user();
-
-        if (!$user || (!$user->hasRole('organizer') && !$user->hasRole('admin'))) {
-            return response()->json(['error' => 'Accès refusé.'], 403);
+        $user = $request->attributes->get('user');
+    
+        $eventData = $request->validated();
+        $eventData['created_by'] = $user->id;
+    
+        if ($request->hasFile('image')) {
+            $eventData['image'] = $request->file('image')->store('events', 'public');
         }
-
-        $event = Event::create(array_merge($request->validated(), ['created_by' => $user->id]));
-
-        return response()->json(['message' => 'Événement créé avec succès', 'event' => $event], 201);
+    
+        $event = Event::create($eventData);
+    
+        return response()->json([
+            'message' => 'Event créé avec succès',
+            'event' => $event
+        ], 201);
     }
+    
 
-    /**
-     * 📌 Afficher un seul événement (accessible à tous)
-     */
     public function show(string $id)
     {
         $event = Event::find($id);
-
+        
         if (!$event) {
-            return response()->json(['error' => 'Événement non trouvé.'], 404);
+            return response()->json(['error' => 'Event not found.'], 404);
         }
 
         return response()->json($event);
     }
 
-    /**
-     * 📌 Mettre à jour un événement (Organisateur et Admin uniquement)
-     */
     public function update(EventRequest $request, string $id)
     {
         $event = Event::find($id);
-        $user = Auth::user();
-
+        
         if (!$event) {
-            return response()->json(['error' => 'Événement non trouvé.'], 404);
+            return response()->json(['error' => 'Event not found.'], 404);
         }
 
-        if (!$user || (!$user->hasRole('admin') && $event->created_by !== $user->id)) {
-            return response()->json(['error' => 'Vous n\'avez pas la permission de modifier cet événement.'], 403);
+        $existingEvent = Event::where('title', $request->title)->where('id', '!=', $id)->first();
+        if ($existingEvent) {
+            return response()->json(['error' => 'Another event with this title already exists.'], 400);
         }
 
         $event->update($request->validated());
 
-        return response()->json(['message' => 'Événement mis à jour avec succès', 'event' => $event]);
+        return response()->json(['message' => 'Event updated successfully', 'event' => $event]);
     }
 
-    /**
-     * 📌 Supprimer un événement 
-     * - Admin peut supprimer tous les événements.
-     * - Organisateur peut supprimer seulement ses propres événements.
-     */
     public function destroy(string $id)
     {
         $event = Event::find($id);
-        $user = Auth::user();
 
         if (!$event) {
-            return response()->json(['error' => 'Événement non trouvé.'], 404);
-        }
-
-        if (!$user || (!$user->hasRole('admin') && $event->created_by !== $user->id)) {
-            return response()->json(['error' => 'Vous n\'avez pas la permission de supprimer cet événement.'], 403);
+            return response()->json(['error' => 'Event not found.'], 404);
         }
 
         $event->delete();
 
-        return response()->json(['message' => 'Événement supprimé avec succès']);
+        return response()->json(['message' => 'Event deleted successfully']);
     }
 }

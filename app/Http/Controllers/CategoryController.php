@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Http\Requests\CategoryRequest;
 
-
 class CategoryController extends Controller
 {
     public function index()
@@ -18,11 +17,11 @@ class CategoryController extends Controller
     {
         $existingCategory = Category::where('name', $request->name)->first();
         if ($existingCategory) {
-            return response()->json(['error' => 'Une catégorie avec ce nom existe déjà.'], 400);
+            return response()->json(['error' => 'A category with this name already exists.'], 400);
         }
 
         $category = Category::create($request->validated());
-        return response()->json(['message' => 'Catégorie créée avec succès', 'category' => $category], 201);
+        return response()->json(['message' => 'Category successfully created', 'category' => $category], 201);
     }
 
     public function show($id)
@@ -47,11 +46,10 @@ class CategoryController extends Controller
         $category->update($request->validated());
     
         return response()->json([
-            'message' => 'Catégorie mise à jour avec succès',
+            'message' => 'Category successfully updated',
             'category' => $category
         ]);
     }
-    
 
     public function destroy($id)
     {
@@ -63,7 +61,6 @@ class CategoryController extends Controller
     
         $category->delete();
     
-        return response()->json(['message' => 'Catégorie supprimée avec succès']);
+        return response()->json(['message' => 'Category successfully deleted']);
     }
-    
 }

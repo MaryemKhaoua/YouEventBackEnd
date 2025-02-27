@@ -21,7 +21,6 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
     
-     
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
@@ -30,12 +29,11 @@ class AuthController extends Controller
         ]);
     
         return response()->json([
-            'message' => 'Utilisateur créé avec succès',
+            'message' => 'User successfully created',
             'user' => $user
         ], 201);
     }
     
-
     public function login(Request $request)
     {
         $request->validate([
@@ -46,7 +44,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
     
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => 'Email ou mot de passe invalide'], 401);
+            return response()->json(['error' => 'Invalid email or password'], 401);
         }
     
         $payload = [
@@ -66,17 +64,10 @@ class AuthController extends Controller
         ]);
     }
     
-
     public function logout()
     {
-        return response()->json(['message' => 'Déconnexion réussie'])->cookie(Cookie::forget('jwt_token'));
+        return response()->json(['message' => 'Logout successful'])->cookie(Cookie::forget('jwt_token'));
     }
-
-    // public function me(Request $request)
-    // {
-    //     $user = auth()->user();
-    //     return response()->json($user);
-    // }
 
     public function sendemail(Request $request)
     {
@@ -87,11 +78,11 @@ class AuthController extends Controller
 
         $resetLink = route('resetwithemail', ['token' => $token]);
 
-        Mail::raw('Réinitialisez votre mot de passe en cliquant sur ce lien : ' . $resetLink, function ($message) use ($request) {
-            $message->to($request->email)->subject('Réinitialisation du mot de passe');
+        Mail::raw('Reset your password by clicking this link: ' . $resetLink, function ($message) use ($request) {
+            $message->to($request->email)->subject('Password Reset');
         });
 
-        return response()->json(['message' => 'Lien de réinitialisation envoyé']);
+        return response()->json(['message' => 'Reset link sent']);
     }
 
     public function addpassword(Request $request)
@@ -106,6 +97,31 @@ class AuthController extends Controller
             'remember_token' => null,
         ]);
 
-        return response()->json(['message' => 'Mot de passe mis à jour avec succès']);
+        return response()->json(['message' => 'Password updated successfully']);
+    }
+
+    public function me(Request $request)
+    {
+        $jwt_secret = env('JWT_SECRET', 'default_secret_key');
+
+        $token = $request->bearerToken();
+    
+        if (!$token) {
+            return response()->json(['error' => 'Token not provided'], 401);
+        }
+
+        try {
+            $decoded = JWT::decode($token, new Key($jwt_secret, 'HS256'));
+
+            $user = User::find($decoded->id);
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            return response()->json(['user' => $user]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
     }
 }
